@@ -300,14 +300,16 @@ function postCardHtml(p, idx) {
   const metaS = p.status ? chip2(statusLabel(p.status), statusChipClass(p.status)) : "";
   const metaAsg = p.assignee ? chip2(`@${p.assignee}`, "chip--assignee") : "";
   const meta = `${heat}${metaA}${metaK}${metaS}${metaAsg}${tagsHtml}`;
+  const cardClass = p.kind === "task" ? "card card--task" : "card";
+  const when = p.createdAt ? fmtTime(p.createdAt) : "";
   return `
-    <article class="card card--blue" tabindex="0" role="button" data-open="post" data-id="${p.id}" style="animation-delay:${delay}ms">
-      <div class="card__cover" aria-hidden="true">
-        <div class="heat" aria-label="热度">${escapeHtml(String(p.likeCount * 100 + p.commentCount * 30 + p.id))}</div>
-        <div class="badgeIcon badgeIcon--gear" aria-hidden="true"><span></span></div>
+    <article class="${cardClass}" tabindex="0" role="button" data-open="post" data-id="${p.id}" style="animation-delay:${delay}ms">
+      <div class="card__hdr" aria-hidden="true">
+        <div class="card__hdrLeft">#${escapeHtml(String(p.id))}</div>
+        <div class="card__hdrRight">${escapeHtml(when)}</div>
       </div>
       <div class="card__info">
-        <div class="card__title"><span class="card__tag">【${escapeHtml(p.author)}】</span>${escapeHtml(p.title)}</div>
+        <div class="card__title"><span class="card__tag">@${escapeHtml(p.author)}</span>${escapeHtml(p.title)}</div>
         <div class="card__desc">${escapeHtml(p.excerpt || "")}</div>
         <div class="card__meta">${meta}</div>
       </div>
