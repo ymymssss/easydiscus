@@ -1,0 +1,15 @@
+# secrets
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
+
+# OS/editor
+.DS_Store
+.vscode/
+
+# node/python caches
+node_modules/
+__pycache__/
