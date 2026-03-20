@@ -60,6 +60,10 @@ const state = {
   openPostId: null,
   openPost: null,
   openConvoId: null,
+  eventsSince: 0,
+  eventsTimer: null,
+  eventsBackoffMs: 700,
+  notifiedEventIds: new Set(),
 };
 
 function safeTrim(v) {
@@ -83,6 +87,154 @@ function show(node, on) {
 function parseNum(v, fallback) {
   const n = Number(String(v || "").trim());
   return Number.isFinite(n) ? n : fallback;
+}
+
+function toast(title, sub, opts) {
+  const host = el("toastStack");
+  if (!host) return;
+
+  const o = opts || {};
+  const kind = o.kind || "info";
+  const ttlMs = Number.isFinite(o.ttlMs) ? o.ttlMs : 7000;
+
+  const node = document.createElement("div");
+  node.className = `toast ${kind === "warn" ? "toast--warn" : ""}`.trim();
+  node.innerHTML = `
+    <div class="toast__title">${escapeHtml(title)}</div>
+    ${sub ? `<div class="toast__sub">${escapeHtml(sub)}</div>` : ""}
+    <div class="toast__tools"></div>
+  `;
+
+  const tools = node.querySelector(".toast__tools");
+  const actions = Array.isArray(o.actions) ? o.actions : [];
+  for (const a of actions) {
+    const b = document.createElement("button");
+    b.className = "btn btn--tiny btn--ghost";
+    b.type = "button";
+    b.textContent = a.label || "打开";
+    b.addEventListener("click", async () => {
+      try {
+        if (typeof a.onClick === "function") await a.onClick();
+      } finally {
+        try {
+          node.remove();
+        } catch (_e) {
+          // ignore
+        }
+      }
+    });
+    tools.appendChild(b);
+  }
+
+  host.prepend(node);
+  if (ttlMs > 0) {
+    setTimeout(() => {
+      try {
+        node.remove();
+      } catch (_e) {
+        // ignore
+      }
+    }, ttlMs);
+  }
+}
+
+function shouldNotifyEvent(ev) {
+  // Avoid flooding: only notify for some event types.
+  const t = String(ev.type || "");
+  if (t === "post.created") return true;
+  if (t === "comment.created") return true;
+  if (t === "task.claimed") return true;
+  return false;
+}
+
+function notifyEvent(ev) {
+  const id = Number(ev.id);
+  if (!Number.isFinite(id)) return;
+  if (state.notifiedEventIds.has(id)) return;
+  state.notifiedEventIds.add(id);
+
+  const actor = ev.actor ? `@${ev.actor}` : "有人";
+  const title = (ev.post && ev.post.title) || "";
+  const kind = ev.post && ev.post.kind;
+  const status = ev.post && ev.post.status;
+
+  let head = "新动态";
+  let sub = title;
+  if (ev.type === "post.created") {
+    head = kind === "task" ? "新任务" : "新帖子";
+    sub = `${actor}：${title}`;
+  } else if (ev.type === "comment.created") {
+    head = "新评论";
+    sub = `${actor}：${title}`;
+  } else if (ev.type === "task.claimed") {
+    head = "任务被领取";
+    sub = `${actor}：${title}${status ? ` · ${statusLabel(status)}` : ""}`;
+  }
+
+  toast(head, sub, {
+    kind: kind === "task" ? "warn" : "info",
+    ttlMs: 9000,
+    actions: [
+      {
+        label: "打开",
+        onClick: async () => {
+          await openPost(ev.postId);
+        },
+      },
+    ],
+  });
+}
+
+async function eventsLoop() {
+  if (!state.me) return;
+  // Lazy init
+  if (!state.eventsSince) state.eventsSince = Date.now();
+
+  const url = `/api/events?since=${encodeURIComponent(String(state.eventsSince))}&limit=200&waitMs=25000`;
+  try {
+    const data = await api(url, { method: "GET" });
+    const events = data.events || [];
+    for (const ev of events) {
+      if (shouldNotifyEvent(ev)) notifyEvent(ev);
+    }
+    state.eventsSince = Number(data.nextSince || state.eventsSince);
+    state.eventsBackoffMs = 700;
+
+    // Keep UI in sync with background changes.
+    if (events.length) {
+      try {
+        await loadTags();
+        await loadPosts();
+        if (state.openPostId) {
+          await openPost(state.openPostId);
+        }
+      } catch (_e) {
+        // ignore
+      }
+    }
+
+    // Next long-poll immediately.
+    state.eventsTimer = setTimeout(eventsLoop, 50);
+  } catch (_err) {
+    // Backoff on network/auth errors.
+    state.eventsTimer = setTimeout(eventsLoop, state.eventsBackoffMs);
+    state.eventsBackoffMs = Math.min(Math.floor(state.eventsBackoffMs * 1.7 + 50), 15000);
+  }
+}
+
+function startEventsIfNeeded() {
+  if (state.eventsTimer) return;
+  state.eventsSince = Date.now();
+  state.notifiedEventIds = new Set();
+  state.eventsBackoffMs = 700;
+  state.eventsTimer = setTimeout(eventsLoop, 200);
+}
+
+function stopEvents() {
+  if (state.eventsTimer) {
+    clearTimeout(state.eventsTimer);
+    state.eventsTimer = null;
+  }
 }
 
 function statusLabel(s) {
@@ -191,6 +343,12 @@ async function refreshMe() {
 
   showInline(el("adminTab"), !!(state.me && state.me.isAdmin));
   showInline(el("adminMintRow"), !!(state.me && state.me.isAdmin));
+
+  if (state.me) {
+    startEventsIfNeeded();
+  } else {
+    stopEvents();
+  }
 }
 
 async function loadTags() {
@@ -495,6 +653,7 @@ async function main() {
         el("authMsg").textContent = "登录成功";
         await refreshMe();
         await loadPosts();
+        toast("已开启通知", "将提示新任务/新评论/任务领取", { ttlMs: 4500 });
       } catch (err) {
         el("authMsg").textContent = `登录失败：${err.message}`;
       }
@@ -510,6 +669,7 @@ async function main() {
         el("authMsg").textContent = "注册成功";
         await refreshMe();
         await loadPosts();
+        toast("已开启通知", "将提示新任务/新评论/任务领取", { ttlMs: 4500 });
       } catch (err) {
         el("authMsg").textContent = `注册失败：${err.message}`;
       }
@@ -522,6 +682,7 @@ async function main() {
         el("authMsg").textContent = "已退出";
         await refreshMe();
         await loadPosts();
+        toast("已关闭通知", "你已退出登录", { ttlMs: 4000 });
       } catch (err) {
         el("authMsg").textContent = `退出失败：${err.message}`;
       }
@@ -877,6 +1038,7 @@ async function main() {
         setModal("authModal", false);
         await refreshMe();
         await loadPosts();
+        toast("已关闭通知", "你已退出登录", { ttlMs: 4000 });
       } catch (err) {
         el("tokenMsg").textContent = `退出失败：${err.message}`;
       }
