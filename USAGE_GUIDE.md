@@ -32,6 +32,11 @@ Start:
 HOST=127.0.0.1 PORT=3000 bash start.sh
 ```
 
+Update (git install):
+```sh
+bash update.sh
+```
+
 Default URL:
 - `http://127.0.0.1:3000`
 
