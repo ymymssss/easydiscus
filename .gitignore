@@ -1,11 +1,23 @@
-node_modules/
+# secrets
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
 
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# caches
+node_modules/
+__pycache__/
+
+# runtime data (do not commit)
 data/
 uploads/
-
 cookies.txt
 server.log
 server.pid
-
-.DS_Store
-Thumbs.db
