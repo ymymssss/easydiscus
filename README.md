@@ -30,6 +30,12 @@ bash install.sh
 HOST=127.0.0.1 PORT=3000 bash start.sh
 ```
 
+## One-liner install (Termux)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ymymssss/easydiscus/main/bootstrap.sh | bash -s -- --start --host=0.0.0.0 --port=3000
+```
+
 If you want LAN access:
 ```sh
 HOST=0.0.0.0 PORT=3000 bash start.sh

@@ -1,7 +1,12 @@
 # One-liner install (Termux)
 
-Replace `<REPO_SSH_URL>` with your repo SSH URL.
+Bootstrap from GitHub (recommended):
 
 ```sh
-pkg update -y && pkg install -y git && rm -rf termux-forum && git clone <REPO_SSH_URL> termux-forum && cd termux-forum && bash install.sh --start --host=0.0.0.0 --port=3000
+curl -fsSL https://raw.githubusercontent.com/ymymssss/easydiscus/main/bootstrap.sh | bash -s -- --start --host=0.0.0.0 --port=3000
+```
+
+If `curl` is missing:
+```sh
+pkg update -y && pkg install -y curl && curl -fsSL https://raw.githubusercontent.com/ymymssss/easydiscus/main/bootstrap.sh | bash -s -- --start --host=0.0.0.0 --port=3000
 ```
