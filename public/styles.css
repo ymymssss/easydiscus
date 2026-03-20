@@ -264,6 +264,25 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.search__clear {
+  appearance: none;
+  border: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.search__clear:hover {
+  filter: brightness(1.05);
+}
+
 .search__icon {
   opacity: 0.9;
 }
@@ -347,6 +366,25 @@ body {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pager__info {
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
 }
 
 .missions__hint {

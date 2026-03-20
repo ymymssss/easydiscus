@@ -64,6 +64,7 @@ const state = {
   eventsTimer: null,
   eventsBackoffMs: 700,
   notifiedEventIds: new Set(),
+  _qTimer: null,
 };
 
 function safeTrim(v) {
@@ -378,6 +379,15 @@ async function loadPosts() {
   const data = await api(`/api/posts?${qs.toString()}`, { method: "GET" });
   state.posts = data.posts;
   renderGrid();
+
+  const info = el("pageInfo");
+  if (info) {
+    const hasPrev = state.page > 1;
+    const hasNext = (data.posts || []).length >= 20;
+    info.textContent = `第 ${state.page} 页${state.q ? " · 搜索" : ""}${state.tag ? " · #" + state.tag : ""}`;
+    if (el("prevPage")) el("prevPage").disabled = !hasPrev;
+    if (el("nextPage")) el("nextPage").disabled = !hasNext;
+  }
 }
 
 async function openPost(id) {
@@ -1057,13 +1067,53 @@ async function main() {
   el("q").addEventListener("keydown", async (e) => {
     if (e.key !== "Enter") return;
     state.q = el("q").value.trim();
+    state.page = 1;
     await loadPosts();
   });
 
+  el("q").addEventListener("input", async () => {
+    // Light debounce for live search.
+    if (state._qTimer) clearTimeout(state._qTimer);
+    state._qTimer = setTimeout(async () => {
+      const v = el("q").value.trim();
+      if (v === state.q) return;
+      state.q = v;
+      state.page = 1;
+      await loadPosts();
+    }, 260);
+  });
+
+  const clearBtn = el("clearQ");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", async () => {
+      el("q").value = "";
+      state.q = "";
+      state.page = 1;
+      await loadPosts();
+    });
+  }
+
   el("tagSelect").addEventListener("change", async (e) => {
     state.tag = e.target.value;
+    state.page = 1;
     await loadPosts();
   });
+
+  const prev = el("prevPage");
+  const next = el("nextPage");
+  if (prev) {
+    prev.addEventListener("click", async () => {
+      if (state.page <= 1) return;
+      state.page -= 1;
+      await loadPosts();
+    });
+  }
+  if (next) {
+    next.addEventListener("click", async () => {
+      state.page += 1;
+      await loadPosts();
+    });
+  }
 
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", async () => {

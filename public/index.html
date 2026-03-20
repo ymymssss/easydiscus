@@ -52,6 +52,7 @@
                   placeholder="搜索标题 / 正文（回车）"
                   autocomplete="off"
                 />
+                <button class="search__clear" id="clearQ" type="button" aria-label="清除搜索">✕</button>
               </label>
               <button class="btn" id="newPostBtn" type="button">发帖</button>
               <button class="btn btn--ghost" id="authBtn" type="button">登录</button>
@@ -64,6 +65,11 @@
 
             <div class="missions__footer" aria-label="底部功能区">
               <div class="missions__hint" id="hint">未登录也可浏览；登录后可发帖/评论/点赞</div>
+              <div class="pager" aria-label="翻页">
+                <button class="btn btn--tiny btn--ghost" id="prevPage" type="button">上一页</button>
+                <div class="pager__info" id="pageInfo">第 1 页</div>
+                <button class="btn btn--tiny btn--ghost" id="nextPage" type="button">下一页</button>
+              </div>
               <label class="filter" aria-label="标签筛选">
                 <select class="filter__select" id="tagSelect">
                   <option value="" selected>全部标签</option>
