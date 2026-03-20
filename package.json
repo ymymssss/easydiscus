@@ -1,0 +1,19 @@
+{
+  "name": "termux-forum",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "marked": "^12.0.2",
+    "multer": "^2.0.0",
+    "sanitize-html": "^2.14.0",
+    "sql.js": "^1.13.0",
+    "uuid": "^9.0.1"
+  }
+}

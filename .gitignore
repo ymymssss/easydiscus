@@ -1,0 +1,11 @@
+node_modules/
+
+data/
+uploads/
+
+cookies.txt
+server.log
+server.pid
+
+.DS_Store
+Thumbs.db

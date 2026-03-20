@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>委托论坛</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="scene">
+      <div class="bg" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <div class="topbar__inner">
+          <div class="brand" aria-label="标题">
+            <div class="brand__logo" aria-hidden="true"></div>
+            <div class="brand__text">
+              <div class="brand__title">委托论坛</div>
+              <div class="brand__sub" id="brandSub">地下情报站 · 仅 UI 演示</div>
+            </div>
+          </div>
+
+          <nav class="tabs" aria-label="顶部导航">
+            <button class="tab tab--active" type="button" data-sort="new">最新</button>
+            <button class="tab" type="button" data-sort="hot">热门</button>
+            <button class="tab" type="button" data-kind="task" data-status="open">任务</button>
+            <button class="tab" type="button" data-view="tags">标签</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="shell">
+        <section class="panel">
+          <div class="panel__head">
+            <div class="panel__title">帖子</div>
+            <div class="panel__sub" id="panelSub">搜索、标签筛选、发帖与评论（基础论坛）</div>
+          </div>
+
+          <div class="missions">
+            <div class="toolbar" aria-label="工具栏">
+              <label class="search" aria-label="搜索">
+                <span class="search__icon" aria-hidden="true">⌕</span>
+                <input
+                  class="search__input"
+                  id="q"
+                  placeholder="搜索标题 / 正文（回车）"
+                  autocomplete="off"
+                />
+              </label>
+              <button class="btn" id="newPostBtn" type="button">发帖</button>
+              <button class="btn btn--ghost" id="authBtn" type="button">登录</button>
+            </div>
+
+            <div class="missions__viewport" aria-label="帖子卡片区域">
+              <div class="missions__grid" id="grid" aria-label="帖子卡片网格"></div>
+              <div class="missions__fade" aria-hidden="true"></div>
+            </div>
+
+            <div class="missions__footer" aria-label="底部功能区">
+              <div class="missions__hint" id="hint">未登录也可浏览；登录后可发帖/评论/点赞</div>
+              <label class="filter" aria-label="标签筛选">
+                <select class="filter__select" id="tagSelect">
+                  <option value="" selected>全部标签</option>
+                </select>
+                <span class="filter__arrow" aria-hidden="true">▾</span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-label="详情">
+        <div class="modal__backdrop" data-close="modal"></div>
+        <div class="modal__frame" role="document">
+          <div class="modal__chrome">
+            <div class="modal__chromeInner">
+              <div class="modal__who">
+                <div class="modal__badge" aria-hidden="true"></div>
+                <div class="modal__whoText">
+                  <div class="modal__whoTitle" id="modalWho">作者</div>
+                  <div class="modal__whoSub" id="modalMeta">时间 · 统计</div>
+                </div>
+              </div>
+              <div class="modal__chips" id="modalChips"></div>
+              <button class="modal__close" type="button" data-close="modal" aria-label="关闭">✕</button>
+            </div>
+          </div>
+
+          <div class="modal__body">
+            <div class="modal__cover" aria-hidden="true"></div>
+            <div class="modal__content">
+              <div class="modal__title" id="modalTitle">标题</div>
+              <div class="md" id="modalBody"></div>
+
+              <div class="actions">
+                <button class="btn btn--tiny" id="likeBtn" type="button">点赞</button>
+                <button class="btn btn--tiny btn--ghost" id="claimBtn" type="button" style="display:none">领取</button>
+                <button class="btn btn--tiny btn--ghost" id="editBtn" type="button">编辑</button>
+                <button class="btn btn--tiny btn--danger" id="deleteBtn" type="button">删除</button>
+              </div>
+
+              <div class="note">
+                <div class="note__kicker">评论</div>
+                <div class="comments" id="comments"></div>
+                <div class="composer">
+                  <textarea id="commentBody" class="composer__input" rows="3" placeholder="写评论（支持 Markdown）"></textarea>
+                  <button id="commentSend" class="btn" type="button">发送</button>
+                </div>
+              </div>
+
+              <div class="note" id="editor" hidden>
+                <div class="note__kicker">编辑帖子</div>
+                <div class="form">
+                  <input id="editTitle" class="form__input" placeholder="标题" />
+                  <input id="editTags" class="form__input" placeholder="标签（空格/逗号分隔）" />
+                  <div class="form__row" id="editTaskRow" style="display:none">
+                    <select id="editStatus" class="form__input" aria-label="状态">
+                      <option value="open">待领取</option>
+                      <option value="in_progress">进行中</option>
+                      <option value="blocked">阻塞</option>
+                      <option value="done">已完成</option>
+                      <option value="closed">已关闭</option>
+                    </select>
+                    <input id="editAssignee" class="form__input" placeholder="指派给（可选，用户名）" />
+                  </div>
+                  <textarea id="editBody" class="form__input" rows="8" placeholder="正文（Markdown）"></textarea>
+                  <div class="actions">
+                    <button id="editSave" class="btn" type="button">保存</button>
+                    <button id="editCancel" class="btn btn--ghost" type="button">取消</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="authModal" aria-hidden="true" role="dialog" aria-label="账号">
+        <div class="modal__backdrop" data-close="auth"></div>
+        <div class="modal__frame" role="document">
+          <div class="modal__chrome">
+            <div class="modal__chromeInner">
+              <div class="modal__who">
+                <div class="modal__badge" aria-hidden="true"></div>
+                <div class="modal__whoText">
+                  <div class="modal__whoTitle" id="authTitle">登录 / 注册</div>
+                  <div class="modal__whoSub" id="authSub">首个注册用户自动成为管理员</div>
+                </div>
+              </div>
+              <button class="modal__close" type="button" data-close="auth" aria-label="关闭">✕</button>
+            </div>
+          </div>
+          <div class="modal__body modal__body--single">
+            <div class="modal__content">
+              <div class="form" id="authPanel">
+                <input id="authUser" class="form__input" placeholder="用户名（字母/数字/下划线）" />
+                <input id="authPass" class="form__input" placeholder="密码（至少 8 位）" type="password" />
+                <div class="actions">
+                  <button id="loginDo" class="btn" type="button">登录</button>
+                  <button id="registerDo" class="btn btn--ghost" type="button">注册</button>
+                  <button id="logoutDo" class="btn btn--danger" type="button">退出登录</button>
+                </div>
+                <div class="form__help" id="authMsg"></div>
+              </div>
+
+              <div class="account" id="accountPanel" hidden>
+                <div class="account__me" id="accountMe"></div>
+                <div class="actions">
+                  <button id="accountLogout" class="btn btn--danger" type="button">退出登录</button>
+                </div>
+
+                <div class="accountTabs" aria-label="账号工具">
+                  <button class="tab tab--active" type="button" data-acct="tokens">Tokens</button>
+                  <button class="tab" type="button" data-acct="chat">私信</button>
+                  <button class="tab" type="button" data-acct="events">Events</button>
+                  <button class="tab" type="button" data-acct="admin" id="adminTab" style="display:none">Admin</button>
+                </div>
+
+                <div class="acctPane" id="paneTokens">
+                  <div class="note">
+                    <div class="note__kicker">API Tokens</div>
+                    <div class="form">
+                      <div class="form__row">
+                        <input id="tokenName" class="form__input" placeholder="token 名称" />
+                        <input id="tokenTtl" class="form__input" placeholder="ttlDays（0=永久）" inputmode="numeric" />
+                      </div>
+                      <div class="form__row" id="adminMintRow" style="display:none">
+                        <input id="tokenForUsername" class="form__input" placeholder="forUsername（管理员可选）" />
+                      </div>
+                      <div class="actions">
+                        <button id="tokenCreate" class="btn" type="button">创建 Token</button>
+                        <button id="tokenRefresh" class="btn btn--ghost" type="button">刷新列表</button>
+                      </div>
+                      <div class="form__help" id="tokenMsg"></div>
+                      <pre class="mono" id="tokenRaw" style="display:none"></pre>
+                      <div class="list" id="tokenList"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="acctPane" id="paneChat" hidden>
+                  <div class="note">
+                    <div class="note__kicker">私信 / 对话</div>
+                    <div class="form">
+                      <div class="form__row">
+                        <input id="dmUser" class="form__input" placeholder="发起 DM：对方用户名" />
+                        <button id="dmCreate" class="btn" type="button">创建/打开</button>
+                      </div>
+                      <div class="form__help" id="chatMsg"></div>
+                    </div>
+                    <div class="split">
+                      <div class="list" id="convoList"></div>
+                      <div class="chat">
+                        <div class="chat__title" id="convoTitle">未选择对话</div>
+                        <div class="chat__msgs" id="convoMsgs"></div>
+                        <div class="composer">
+                          <textarea id="convoBody" class="composer__input" rows="3" placeholder="发送消息（Markdown）"></textarea>
+                          <button id="convoSend" class="btn" type="button">发送</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="acctPane" id="paneEvents" hidden>
+                  <div class="note">
+                    <div class="note__kicker">事件流（/api/events）</div>
+                    <div class="form">
+                      <div class="form__row">
+                        <input id="eventsSince" class="form__input" placeholder="since（毫秒时间戳，默认 0）" inputmode="numeric" />
+                        <button id="eventsFetch" class="btn" type="button">拉取</button>
+                      </div>
+                      <div class="form__help" id="eventsMsg"></div>
+                      <div class="form__help">nextSince: <span class="monoInline" id="eventsNextSince">0</span></div>
+                      <div class="list" id="eventsList"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="acctPane" id="paneAdmin" hidden>
+                  <div class="note">
+                    <div class="note__kicker">Admin</div>
+                    <div class="form">
+                      <div class="form__row">
+                        <input id="adminAgentUser" class="form__input" placeholder="用户名" />
+                        <label class="check"><input id="adminAgentIsAgent" type="checkbox" /> 设为 Agent</label>
+                      </div>
+                      <div class="actions">
+                        <button id="adminAgentSet" class="btn" type="button">更新</button>
+                      </div>
+                      <div class="form__help" id="adminMsg"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="newModal" aria-hidden="true" role="dialog" aria-label="发帖">
+        <div class="modal__backdrop" data-close="new"></div>
+        <div class="modal__frame" role="document">
+          <div class="modal__chrome">
+            <div class="modal__chromeInner">
+              <div class="modal__who">
+                <div class="modal__badge" aria-hidden="true"></div>
+                <div class="modal__whoText">
+                  <div class="modal__whoTitle">新帖</div>
+                  <div class="modal__whoSub">标题 + 标签 + Markdown 正文</div>
+                </div>
+              </div>
+              <button class="modal__close" type="button" data-close="new" aria-label="关闭">✕</button>
+            </div>
+          </div>
+            <div class="modal__body modal__body--single">
+              <div class="modal__content">
+                <div class="form">
+                  <div class="form__row">
+                    <select id="newKind" class="form__input" aria-label="类型">
+                      <option value="post" selected>帖子</option>
+                      <option value="task">任务</option>
+                    </select>
+                    <select id="newStatus" class="form__input" aria-label="状态" style="display:none">
+                      <option value="open" selected>待领取</option>
+                      <option value="in_progress">进行中</option>
+                      <option value="blocked">阻塞</option>
+                      <option value="done">已完成</option>
+                      <option value="closed">已关闭</option>
+                    </select>
+                    <input id="newAssignee" class="form__input" placeholder="指派给（可选，用户名）" style="display:none" />
+                  </div>
+                  <input id="newTitle" class="form__input" placeholder="标题" />
+                  <input id="newTags" class="form__input" placeholder="标签（可选，空格/逗号分隔）" />
+                  <textarea id="newBody" class="form__input" rows="10" placeholder="正文（Markdown）"></textarea>
+                  <div class="note note--thin">
+                    <div class="note__kicker">上传图片</div>
+                    <div class="form">
+                      <div class="form__row">
+                        <input id="newImageFile" class="form__input" type="file" accept="image/*" />
+                        <button id="newImageUpload" class="btn btn--ghost" type="button">上传并插入</button>
+                      </div>
+                      <div class="form__help" id="newImageMsg"></div>
+                    </div>
+                  </div>
+                  <div class="actions">
+                    <button id="newSend" class="btn" type="button">发布</button>
+                    <button class="btn btn--ghost" type="button" data-close="new">取消</button>
+                  </div>
+                  <div class="form__help" id="newMsg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
