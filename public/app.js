@@ -65,6 +65,7 @@ const state = {
   eventsBackoffMs: 700,
   notifiedEventIds: new Set(),
   _qTimer: null,
+  dense: false,
 };
 
 function safeTrim(v) {
@@ -198,6 +199,13 @@ async function eventsLoop() {
     for (const ev of events) {
       if (shouldNotifyEvent(ev)) notifyEvent(ev);
     }
+    if (events.length) {
+      try {
+        renderEventsMini(events);
+      } catch (_e) {
+        // ignore
+      }
+    }
     state.eventsSince = Number(data.nextSince || state.eventsSince);
     state.eventsBackoffMs = 700;
 
@@ -323,7 +331,71 @@ function renderGrid() {
     grid.innerHTML = '<div class="empty">没有内容</div>';
     return;
   }
+  document.body.dataset.density = state.dense ? "dense" : "comfy";
+  const densityBtn = el("densityBtn");
+  if (densityBtn) densityBtn.textContent = state.dense ? "舒适" : "紧凑";
   grid.innerHTML = state.posts.map(postCardHtml).join("");
+}
+
+function updateFilterPanel() {
+  const sum = el("filterSummary");
+  if (!sum) return;
+  const parts = [];
+  if (state.kind) parts.push(`kind=${state.kind}`);
+  if (state.status) parts.push(`status=${state.status}`);
+  if (state.tag) parts.push(`#${state.tag}`);
+  if (state.q) parts.push(`q="${state.q}"`);
+  sum.textContent = parts.length ? parts.join(" · ") : "无";
+}
+
+async function loadTaskMini() {
+  const box = el("taskMini");
+  if (!box) return;
+  const a = await api("/api/posts?kind=task&status=open&sort=new&page=1&limit=4", { method: "GET" });
+  const b = await api("/api/posts?kind=task&status=in_progress&sort=new&page=1&limit=4", { method: "GET" });
+  const items = [...(a.posts || []), ...(b.posts || [])].slice(0, 6);
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">暂无任务</div>';
+    return;
+  }
+  box.innerHTML = items
+    .map((p) => {
+      const dot = p.status === "open" ? "sigDot sigDot--warn" : "sigDot";
+      const sub = `${kindLabel(p.kind)} · ${statusLabel(p.status)}${p.assignee ? " · @" + p.assignee : ""}`;
+      return `<button class="miniRow" type="button" data-open="post" data-id="${p.id}">
+        <span class="${dot}" aria-hidden="true"></span>
+        <span>
+          <div class="miniRow__title">${escapeHtml(p.title)}</div>
+          <div class="miniRow__sub">${escapeHtml(sub)}</div>
+        </span>
+      </button>`;
+    })
+    .join("");
+}
+
+function renderEventsMini(events) {
+  const box = el("eventsMini");
+  if (!box) return;
+  if (!events || !events.length) {
+    box.innerHTML = '<div class="empty">暂无动态</div>';
+    return;
+  }
+  box.innerHTML = events
+    .slice(-6)
+    .map((ev) => {
+      const dotClass = ev.type === "task.claimed" ? "sigDot sigDot--warn" : "sigDot";
+      const actor = ev.actor ? `@${ev.actor}` : "system";
+      const title = (ev.post && ev.post.title) || "";
+      const sub = `${fmtTime(ev.createdAt)} · ${actor} · ${String(ev.type || "")}`;
+      return `<div class="tItem">
+        <span class="${dotClass}" aria-hidden="true"></span>
+        <div class="tItem__body">
+          <div class="tItem__title">${escapeHtml(title || "event")}</div>
+          <div class="tItem__sub">${escapeHtml(sub)}</div>
+        </div>
+      </div>`;
+    })
+    .join("");
 }
 
 async function refreshMe() {
@@ -381,6 +453,12 @@ async function loadPosts() {
   const data = await api(`/api/posts?${qs.toString()}`, { method: "GET" });
   state.posts = data.posts;
   renderGrid();
+  updateFilterPanel();
+  try {
+    await loadTaskMini();
+  } catch (_e) {
+    // ignore
+  }
 
   const info = el("pageInfo");
   if (info) {
@@ -587,6 +665,11 @@ async function main() {
   await refreshMe();
   await loadTags();
   await loadPosts();
+  try {
+    await loadTaskMini();
+  } catch (_e) {
+    // ignore
+  }
 
   const kindSel = el("newKind");
   const newStatus = el("newStatus");
@@ -1126,6 +1209,7 @@ async function main() {
         state.sort = sort;
         state.kind = "";
         state.status = "";
+        state.page = 1;
         await loadPosts();
       }
       const kind = btn.getAttribute("data-kind");
@@ -1133,6 +1217,7 @@ async function main() {
         state.sort = "new";
         state.kind = kind;
         state.status = btn.getAttribute("data-status") || "";
+        state.page = 1;
         await loadPosts();
       }
       const view = btn.getAttribute("data-view");
@@ -1141,6 +1226,31 @@ async function main() {
       }
     });
   });
+
+  const densityBtn = el("densityBtn");
+  if (densityBtn) {
+    densityBtn.addEventListener("click", () => {
+      state.dense = !state.dense;
+      renderGrid();
+    });
+  }
+
+  const clearFilters = el("clearFilters");
+  if (clearFilters) {
+    clearFilters.addEventListener("click", async () => {
+      state.kind = "";
+      state.status = "";
+      state.tag = "";
+      state.q = "";
+      state.page = 1;
+      el("q").value = "";
+      document.querySelectorAll(".tabs .tab").forEach((b) => b.classList.remove("tab--active"));
+      const first = document.querySelector(".tabs .tab[data-sort='new']");
+      if (first) first.classList.add("tab--active");
+      state.sort = "new";
+      await loadPosts();
+    });
+  }
 }
 
 main().catch((e) => {

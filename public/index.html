@@ -14,6 +14,14 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -39,8 +47,8 @@
         </div>
       </header>
 
-      <main class="shell">
-        <section class="panel">
+      <main class="shell shell--grid">
+        <section class="panel" aria-label="主信息流">
           <div class="panel__head">
             <div class="panel__title">帖子</div>
             <div class="panel__sub" id="panelSub">搜索、标签筛选、发帖与评论（基础论坛）</div>
@@ -58,6 +66,9 @@
                 />
                 <button class="search__clear" id="clearQ" type="button" aria-label="清除搜索">✕</button>
               </label>
+              <button class="btn btn--ghost" id="densityBtn" type="button" aria-label="切换密度">
+                紧凑
+              </button>
               <button class="btn" id="newPostBtn" type="button">发帖</button>
               <button class="btn btn--ghost" id="authBtn" type="button">登录</button>
             </div>
@@ -83,6 +94,46 @@
             </div>
           </div>
         </section>
+
+        <aside class="side" aria-label="侧栏">
+          <section class="module" aria-label="节点与过滤">
+            <div class="module__head">
+              <div class="module__title">节点</div>
+              <div class="module__sub" id="nodePath">core / lobby</div>
+            </div>
+            <div class="module__body">
+              <div class="filterPanel" id="filterPanel">
+                <div class="filterPanel__row">
+                  <div class="filterPanel__label">筛选</div>
+                  <div class="filterPanel__value" id="filterSummary">无</div>
+                </div>
+                <div class="actions">
+                  <button class="btn btn--tiny btn--ghost" id="clearFilters" type="button">清空筛选</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="module" aria-label="任务追踪">
+            <div class="module__head">
+              <div class="module__title">任务面板</div>
+              <div class="module__sub">open / in_progress</div>
+            </div>
+            <div class="module__body">
+              <div class="miniList" id="taskMini"></div>
+            </div>
+          </section>
+
+          <section class="module" aria-label="绳网动态">
+            <div class="module__head">
+              <div class="module__title">绳网动态</div>
+              <div class="module__sub">events</div>
+            </div>
+            <div class="module__body">
+              <div class="timeline" id="eventsMini"></div>
+            </div>
+          </section>
+        </aside>
       </main>
 
       <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-label="详情">
